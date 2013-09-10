@@ -1,6 +1,7 @@
 package mylog
 
 import (
+    "fmt"
 	"log"
 )
 
@@ -20,37 +21,37 @@ func New(level int, log *log.Logger) *Logger {
 	return &Logger{level, log}
 }
 
-func (l *Logger) Log(level int, fmt string, v ...interface{}) {
+func (l *Logger) Log(level int, format string, v ...interface{}) {
 	if level < l.level {
 		return
 	}
-	l.Printf(fmt, v...)
+    l.Output(3, fmt.Sprintf(format, v...))
 }
 
-func (l *Logger) Debug(fmt string, v ...interface{}) {
+func (l *Logger) Debug(format string, v ...interface{}) {
 	if l.level > DEBUG {
 		return
 	}
-	l.Printf(fmt, v...)
+    l.Output(3, fmt.Sprintf(format, v...))
 }
 
-func (l *Logger) Info(fmt string, v ...interface{}) {
+func (l *Logger) Info(format string, v ...interface{}) {
 	if l.level > INFO {
 		return
 	}
-	l.Printf(fmt, v...)
+    l.Output(3, fmt.Sprintf(format, v...))
 }
 
-func (l *Logger) Warn(fmt string, v ...interface{}) {
+func (l *Logger) Warn(format string, v ...interface{}) {
 	if l.level > WARN {
 		return
 	}
-	l.Printf(fmt, v...)
+    l.Output(3, fmt.Sprintf(format, v...))
 }
 
-func (l *Logger) Error(fmt string, v ...interface{}) {
+func (l *Logger) Error(format string, v ...interface{}) {
 	if l.level > ERROR {
 		return
 	}
-	l.Printf(fmt, v...)
+    l.Output(3, fmt.Sprintf(format, v...))
 }
