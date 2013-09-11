@@ -49,7 +49,7 @@ func (l *Logger) Warn(format string, v ...interface{}) {
     l.Output(2, fmt.Sprintf(format, v...))
 }
 
-func (l *Logger) Error(format string, v ...interface{}) {
+func (l *Logger) Err(format string, v ...interface{}) {
 	if l.level > ERROR {
 		return
 	}
