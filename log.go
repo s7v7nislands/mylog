@@ -3,6 +3,7 @@ package mylog
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 const (
@@ -20,7 +21,7 @@ var Levels = map[string]int{
 }
 
 func GetLevel(level string) int {
-	l := Levels[level]
+	l := Levels[strings.ToUpper(level)]
 	if l == 0 {
 		return DEBUG
 	}
