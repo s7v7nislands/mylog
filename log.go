@@ -1,7 +1,7 @@
 package mylog
 
 import (
-    "fmt"
+	"fmt"
 	"log"
 )
 
@@ -11,6 +11,21 @@ const (
 	WARN
 	ERROR
 )
+
+var Levels = map[string]int{
+	"DEBUG": DEBUG,
+	"INFO":  INFO,
+	"WARN":  WARN,
+	"ERROR": ERROR,
+}
+
+func GetLevel(level string) int {
+	l := Levels[level]
+	if l == 0 {
+		return DEBUG
+	}
+	return l
+}
 
 type Logger struct {
 	level int
@@ -25,33 +40,33 @@ func (l *Logger) Log(level int, format string, v ...interface{}) {
 	if level < l.level {
 		return
 	}
-    l.Output(2, fmt.Sprintf(format, v...))
+	l.Output(2, fmt.Sprintf(format, v...))
 }
 
 func (l *Logger) Debug(format string, v ...interface{}) {
 	if l.level > DEBUG {
 		return
 	}
-    l.Output(2, fmt.Sprintf(format, v...))
+	l.Output(2, fmt.Sprintf(format, v...))
 }
 
 func (l *Logger) Info(format string, v ...interface{}) {
 	if l.level > INFO {
 		return
 	}
-    l.Output(2, fmt.Sprintf(format, v...))
+	l.Output(2, fmt.Sprintf(format, v...))
 }
 
 func (l *Logger) Warn(format string, v ...interface{}) {
 	if l.level > WARN {
 		return
 	}
-    l.Output(2, fmt.Sprintf(format, v...))
+	l.Output(2, fmt.Sprintf(format, v...))
 }
 
 func (l *Logger) Err(format string, v ...interface{}) {
 	if l.level > ERROR {
 		return
 	}
-    l.Output(2, fmt.Sprintf(format, v...))
+	l.Output(2, fmt.Sprintf(format, v...))
 }
