@@ -80,6 +80,15 @@ func (l *logger) log(level int, format string, v ...interface{}) {
 	l.Output(2, fmt.Sprintf(format, v...))
 }
 
+func (l *logger) fatal(level int, format string, v ...interface{}) {
+	if level < l.level {
+		os.Exit(1)
+		return
+	}
+	l.Output(2, fmt.Sprintf(format, v...))
+	os.Exit(1)
+}
+
 func (l *logger) debug(format string, v ...interface{}) {
 	if l.level > DEBUG {
 		return
@@ -111,7 +120,7 @@ func (l *logger) err(format string, v ...interface{}) {
 func (g *LoggerGroup) Log(level int, format string, v ...interface{}) {
 	for _, l := range g.g {
 		if level < l.level {
-			return
+			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
 	}
@@ -120,7 +129,7 @@ func (g *LoggerGroup) Log(level int, format string, v ...interface{}) {
 func (g *LoggerGroup) Debug(format string, v ...interface{}) {
 	for _, l := range g.g {
 		if l.level > DEBUG {
-			return
+			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
 	}
@@ -129,7 +138,7 @@ func (g *LoggerGroup) Debug(format string, v ...interface{}) {
 func (g *LoggerGroup) Info(format string, v ...interface{}) {
 	for _, l := range g.g {
 		if l.level > INFO {
-			return
+			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
 	}
@@ -138,7 +147,7 @@ func (g *LoggerGroup) Info(format string, v ...interface{}) {
 func (g *LoggerGroup) Warn(format string, v ...interface{}) {
 	for _, l := range g.g {
 		if l.level > WARN {
-			return
+			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
 	}
@@ -147,7 +156,7 @@ func (g *LoggerGroup) Warn(format string, v ...interface{}) {
 func (g *LoggerGroup) Err(format string, v ...interface{}) {
 	for _, l := range g.g {
 		if l.level > ERROR {
-			return
+			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
 	}
@@ -156,16 +165,26 @@ func (g *LoggerGroup) Err(format string, v ...interface{}) {
 func Log(level int, format string, v ...interface{}) {
 	for _, l := range stdLogGroup.g {
 		if level < l.level {
-			return
+			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
+func Fatal(level int, format string, v ...interface{}) {
+	for _, l := range stdLogGroup.g {
+		if level < l.level {
+			continue
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
+	os.Exit(1)
+}
+
 func Debug(format string, v ...interface{}) {
 	for _, l := range stdLogGroup.g {
 		if l.level > DEBUG {
-			return
+			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
 	}
@@ -174,7 +193,7 @@ func Debug(format string, v ...interface{}) {
 func Info(format string, v ...interface{}) {
 	for _, l := range stdLogGroup.g {
 		if l.level > INFO {
-			return
+			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
 	}
@@ -183,7 +202,7 @@ func Info(format string, v ...interface{}) {
 func Warn(format string, v ...interface{}) {
 	for _, l := range stdLogGroup.g {
 		if l.level > WARN {
-			return
+			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
 	}
@@ -192,7 +211,7 @@ func Warn(format string, v ...interface{}) {
 func Err(format string, v ...interface{}) {
 	for _, l := range stdLogGroup.g {
 		if l.level > ERROR {
-			return
+			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
 	}
