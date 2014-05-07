@@ -59,6 +59,15 @@ func New(l ...*logger) *LoggerGroup {
 	return g
 }
 
+func Init(level int, log *log.Logger) {
+	stdLogGroup.Init(level, log)
+}
+
+func (g *LoggerGroup) Init(level int, log *log.Logger) {
+	l := newLogger(level, log)
+	g.g = []*logger{l}
+}
+
 func (g *LoggerGroup) AddHandler(level int, log *log.Logger) {
 	l := newLogger(level, log)
 	g.g = append(g.g, l)
