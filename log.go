@@ -3,9 +3,11 @@ package mylog
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 )
 
+// debug的级别
 const (
 	DEBUG = iota << 1
 	INFO
@@ -13,6 +15,7 @@ const (
 	ERROR
 )
 
+// debug的级别,字符串表示
 var Levels = map[string]int{
 	"DEBUG": DEBUG,
 	"INFO":  INFO,
@@ -20,6 +23,7 @@ var Levels = map[string]int{
 	"ERROR": ERROR,
 }
 
+// GetLevel返回日志级别,没有就返回DEBUG
 func GetLevel(level string) int {
 	l := Levels[strings.ToUpper(level)]
 	if l == 0 {
@@ -28,46 +32,159 @@ func GetLevel(level string) int {
 	return l
 }
 
-type Logger struct {
+// Logger表示有日志级别的
+type logger struct {
 	level int
 	*log.Logger
 }
 
-func New(level int, log *log.Logger) *Logger {
-	return &Logger{level, log}
+// loggerGroup表示可以输出到多个日志
+type LoggerGroup struct {
+	g []*logger
 }
 
-func (l *Logger) Log(level int, format string, v ...interface{}) {
+var stdLog = newLogger(INFO, log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile))
+var stdLogGroup = New(stdLog)
+
+// New返回*Logger
+func newLogger(level int, log *log.Logger) *logger {
+	return &logger{level, log}
+}
+
+// NewGroup返回*LoggerGroup
+func New(l ...*logger) *LoggerGroup {
+	g := &LoggerGroup{}
+	g.g = append(g.g, l...)
+
+	return g
+}
+
+func (g *LoggerGroup) AddHandler(level int, log *log.Logger) {
+	l := newLogger(level, log)
+	g.g = append(g.g, l)
+}
+
+func (l *logger) log(level int, format string, v ...interface{}) {
 	if level < l.level {
 		return
 	}
 	l.Output(2, fmt.Sprintf(format, v...))
 }
 
-func (l *Logger) Debug(format string, v ...interface{}) {
+func (l *logger) debug(format string, v ...interface{}) {
 	if l.level > DEBUG {
 		return
 	}
 	l.Output(2, fmt.Sprintf(format, v...))
 }
 
-func (l *Logger) Info(format string, v ...interface{}) {
+func (l *logger) info(format string, v ...interface{}) {
 	if l.level > INFO {
 		return
 	}
 	l.Output(2, fmt.Sprintf(format, v...))
 }
 
-func (l *Logger) Warn(format string, v ...interface{}) {
+func (l *logger) warn(format string, v ...interface{}) {
 	if l.level > WARN {
 		return
 	}
 	l.Output(2, fmt.Sprintf(format, v...))
 }
 
-func (l *Logger) Err(format string, v ...interface{}) {
+func (l *logger) err(format string, v ...interface{}) {
 	if l.level > ERROR {
 		return
 	}
 	l.Output(2, fmt.Sprintf(format, v...))
+}
+
+func (g *LoggerGroup) Log(level int, format string, v ...interface{}) {
+	for _, l := range g.g {
+		if level < l.level {
+			return
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
+}
+
+func (g *LoggerGroup) Debug(format string, v ...interface{}) {
+	for _, l := range g.g {
+		if l.level > DEBUG {
+			return
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
+}
+
+func (g *LoggerGroup) Info(format string, v ...interface{}) {
+	for _, l := range g.g {
+		if l.level > INFO {
+			return
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
+}
+
+func (g *LoggerGroup) Warn(format string, v ...interface{}) {
+	for _, l := range g.g {
+		if l.level > WARN {
+			return
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
+}
+
+func (g *LoggerGroup) Err(format string, v ...interface{}) {
+	for _, l := range g.g {
+		if l.level > ERROR {
+			return
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
+}
+
+func Log(level int, format string, v ...interface{}) {
+	for _, l := range stdLogGroup.g {
+		if level < l.level {
+			return
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
+}
+
+func Debug(format string, v ...interface{}) {
+	for _, l := range stdLogGroup.g {
+		if l.level > DEBUG {
+			return
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
+}
+
+func Info(format string, v ...interface{}) {
+	for _, l := range stdLogGroup.g {
+		if l.level > INFO {
+			return
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
+}
+
+func Warn(format string, v ...interface{}) {
+	for _, l := range stdLogGroup.g {
+		if l.level > WARN {
+			return
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
+}
+
+func Err(format string, v ...interface{}) {
+	for _, l := range stdLogGroup.g {
+		if l.level > ERROR {
+			return
+		}
+		l.Output(2, fmt.Sprintf(format, v...))
+	}
 }
