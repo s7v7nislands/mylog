@@ -63,6 +63,11 @@ func Init(level int, log *log.Logger) {
 	stdLogGroup.Init(level, log)
 }
 
+func AddHandler(level int, log *log.Logger) {
+	l := newLogger(level, log)
+	stdLogGroup.g = append(stdLogGroup.g, l)
+}
+
 func (g *LoggerGroup) Init(level int, log *log.Logger) {
 	l := newLogger(level, log)
 	g.g = []*logger{l}
@@ -78,15 +83,6 @@ func (l *logger) log(level int, format string, v ...interface{}) {
 		return
 	}
 	l.Output(2, fmt.Sprintf(format, v...))
-}
-
-func (l *logger) fatal(level int, format string, v ...interface{}) {
-	if level < l.level {
-		os.Exit(1)
-		return
-	}
-	l.Output(2, fmt.Sprintf(format, v...))
-	os.Exit(1)
 }
 
 func (l *logger) debug(format string, v ...interface{}) {
@@ -171,9 +167,9 @@ func Log(level int, format string, v ...interface{}) {
 	}
 }
 
-func Fatal(level int, format string, v ...interface{}) {
+func Fatal(format string, v ...interface{}) {
 	for _, l := range stdLogGroup.g {
-		if level < l.level {
+		if l.level > ERROR {
 			continue
 		}
 		l.Output(2, fmt.Sprintf(format, v...))
