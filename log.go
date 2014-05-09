@@ -9,7 +9,7 @@ import (
 
 // debug的级别
 const (
-	DEBUG = iota << 1
+	DEBUG = iota
 	INFO
 	WARN
 	ERROR
