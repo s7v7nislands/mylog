@@ -169,10 +169,7 @@ func Log(level int, format string, v ...interface{}) {
 
 func Fatal(format string, v ...interface{}) {
 	for _, l := range stdLogGroup.g {
-		if l.level > ERROR {
-			continue
-		}
-		l.Output(2, fmt.Sprintf(format, v...))
+		l.Output(2, fmt.Sprintf("Fatal: "+format, v...))
 	}
 	os.Exit(1)
 }
@@ -182,7 +179,7 @@ func Debug(format string, v ...interface{}) {
 		if l.level > DEBUG {
 			continue
 		}
-		l.Output(2, fmt.Sprintf(format, v...))
+		l.Output(2, fmt.Sprintf("Debug: "+format, v...))
 	}
 }
 
@@ -191,7 +188,7 @@ func Info(format string, v ...interface{}) {
 		if l.level > INFO {
 			continue
 		}
-		l.Output(2, fmt.Sprintf(format, v...))
+		l.Output(2, fmt.Sprintf("Info: "+format, v...))
 	}
 }
 
@@ -200,7 +197,7 @@ func Warn(format string, v ...interface{}) {
 		if l.level > WARN {
 			continue
 		}
-		l.Output(2, fmt.Sprintf(format, v...))
+		l.Output(2, fmt.Sprintf("Warn: "+format, v...))
 	}
 }
 
@@ -209,6 +206,6 @@ func Err(format string, v ...interface{}) {
 		if l.level > ERROR {
 			continue
 		}
-		l.Output(2, fmt.Sprintf(format, v...))
+		l.Output(2, fmt.Sprintf("Error: "+format, v...))
 	}
 }
