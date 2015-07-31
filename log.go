@@ -1,6 +1,7 @@
 package mylog
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -46,6 +47,12 @@ var stdLog = New(INFO, os.Stderr, log.LstdFlags|log.Lshortfile)
 
 // New返回*Logger
 func New(level int, l io.Writer, flag int) *logger {
+	return &logger{level: level, l: l, Logger: log.New(l, "", flag)}
+}
+
+// NewCached返回日志缓存在内存中
+func NewCached(level int, flag int) *logger {
+	l := &bytes.Buffer{}
 	return &logger{level: level, l: l, Logger: log.New(l, "", flag)}
 }
 
