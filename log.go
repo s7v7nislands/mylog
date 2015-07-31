@@ -45,6 +45,11 @@ type logger struct {
 
 var stdLog = New(INFO, os.Stderr, log.LstdFlags|log.Lshortfile)
 
+// Init重新初始化
+func Init(level int, l io.Writer, flag int) {
+	stdLog = &logger{level: level, l: l, Logger: log.New(l, "", flag)}
+}
+
 // New返回*Logger
 func New(level int, l io.Writer, flag int) *logger {
 	return &logger{level: level, l: l, Logger: log.New(l, "", flag)}
