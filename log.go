@@ -18,7 +18,7 @@ const (
 	FATAL
 )
 
-// debug的级别,字符串表示
+// Levels 日志的级别,字符串表示
 var Levels = map[string]int{
 	"DEBUG": DEBUG,
 	"INFO":  INFO,
@@ -27,7 +27,7 @@ var Levels = map[string]int{
 	"FATAL": FATAL,
 }
 
-// GetLevel返回日志级别,没有就返回DEBUG
+// GetLevel 返回日志级别,没有就返回DEBUG
 func GetLevel(level string) int {
 	l := Levels[strings.ToUpper(level)]
 	if l == 0 {
@@ -36,114 +36,140 @@ func GetLevel(level string) int {
 	return l
 }
 
-// Logger表示有日志级别的
-type logger struct {
+// Logger 表示有日志级别的
+type Logger struct {
 	level int
-	l     io.Writer
+	w     io.Writer
 	*log.Logger
 }
 
 var stdLog = New(INFO, os.Stderr, log.LstdFlags|log.Lshortfile)
 
-// Init重新初始化
+// Init 重新初始化
 func Init(level int, l io.Writer, flag int) {
-	stdLog = &logger{level: level, l: l, Logger: log.New(l, "", flag)}
+	stdLog = &Logger{
+		level:  level,
+		w:      l,
+		Logger: log.New(l, "", flag),
+	}
 }
 
-// New返回*Logger
-func New(level int, l io.Writer, flag int) *logger {
-	return &logger{level: level, l: l, Logger: log.New(l, "", flag)}
+// New 返回*Logger
+func New(level int, l io.Writer, flag int) *Logger {
+	return &Logger{
+		level:  level,
+		w:      l,
+		Logger: log.New(l, "", flag),
+	}
 }
 
-// NewCached返回日志缓存在内存中
-func NewCached(level int, flag int) *logger {
+// NewCached 返回日志缓存在内存中
+func NewCached(level int, flag int) *Logger {
 	l := &bytes.Buffer{}
-	return &logger{level: level, l: l, Logger: log.New(l, "", flag)}
+	return &Logger{
+		level:  level,
+		w:      l,
+		Logger: log.New(l, "", flag),
+	}
 }
 
-func (l *logger) Log(level int, format string, v ...interface{}) {
+// Log 表示记录相应等级以上的日志
+func (l *Logger) Log(level int, format string, v ...interface{}) {
 	if level < l.level {
 		return
 	}
-	l.Output(2, fmt.Sprintf(format, v...))
+	_ = l.Output(2, fmt.Sprintf(format, v...))
 }
 
-func (l *logger) Debug(format string, v ...interface{}) {
+// Debugf 表示记录DEBUG以上日志
+func (l *Logger) Debugf(format string, v ...interface{}) {
 	if l.level > DEBUG {
 		return
 	}
-	l.Output(2, fmt.Sprintf(format, v...))
+	_ = l.Output(2, fmt.Sprintf(format, v...))
 }
 
-func (l *logger) Info(format string, v ...interface{}) {
+// Infof 表示记录INFO以上日志
+func (l *Logger) Infof(format string, v ...interface{}) {
 	if l.level > INFO {
 		return
 	}
-	l.Output(2, fmt.Sprintf(format, v...))
+	_ = l.Output(2, fmt.Sprintf(format, v...))
 }
 
-func (l *logger) Warn(format string, v ...interface{}) {
+// Warnf 表示记录WARN以上日志
+func (l *Logger) Warnf(format string, v ...interface{}) {
 	if l.level > WARN {
 		return
 	}
-	l.Output(2, fmt.Sprintf(format, v...))
+	_ = l.Output(2, fmt.Sprintf(format, v...))
 }
 
-func (l *logger) Error(format string, v ...interface{}) {
+// Errorf 表示记录ERROR以上日志
+func (l *Logger) Errorf(format string, v ...interface{}) {
 	if l.level > ERROR {
 		return
 	}
-	l.Output(2, fmt.Sprintf(format, v...))
+	_ = l.Output(2, fmt.Sprintf(format, v...))
 }
 
-func (l *logger) GetOutput() io.Writer {
-	return l.l
+// GetOutput 返回日志输出到的地方
+func (l *Logger) GetOutput() io.Writer {
+	return l.w
 }
 
-func (l *logger) Write(format string, v ...interface{}) {
-	l.Output(2, fmt.Sprintf(format, v...))
+// Write 记录日志
+func (l *Logger) Write(format string, v ...interface{}) {
+	_ = l.Output(2, fmt.Sprintf(format, v...))
 }
 
+// Write 记录日志
 func Write(format string, v ...interface{}) {
-	stdLog.Output(2, fmt.Sprintf(format, v...))
+	_ = stdLog.Output(2, fmt.Sprintf(format, v...))
 }
 
+// Log 表示记录相应等级以上的日志
 func Log(level int, format string, v ...interface{}) {
 	if level < stdLog.level {
 		return
 	}
-	stdLog.Output(2, fmt.Sprintf(format, v...))
+	_ = stdLog.Output(2, fmt.Sprintf(format, v...))
 }
 
-func Fatal(format string, v ...interface{}) {
-	stdLog.Output(2, fmt.Sprintf("Fatal: "+format, v...))
+// Fatalf 表示记录日志然后退出
+func Fatalf(format string, v ...interface{}) {
+	_ = stdLog.Output(2, fmt.Sprintf("Fatal: "+format, v...))
 	os.Exit(1)
 }
 
-func Debug(format string, v ...interface{}) {
+// Debugf 表示记录DEBUG以上日志
+func Debugf(format string, v ...interface{}) {
 	if stdLog.level > DEBUG {
 		return
 	}
-	stdLog.Output(2, fmt.Sprintf("Debug: "+format, v...))
+	_ = stdLog.Output(2, fmt.Sprintf("Debug: "+format, v...))
 }
 
-func Info(format string, v ...interface{}) {
+// Infof 表示记录INFO以上日志
+func Infof(format string, v ...interface{}) {
 	if stdLog.level > INFO {
 		return
 	}
-	stdLog.Output(2, fmt.Sprintf("Info: "+format, v...))
+	_ = stdLog.Output(2, fmt.Sprintf("Info: "+format, v...))
 }
 
-func Warn(format string, v ...interface{}) {
+// Warnf 表示记录WARN以上日志
+func Warnf(format string, v ...interface{}) {
 	if stdLog.level > WARN {
 		return
 	}
-	stdLog.Output(2, fmt.Sprintf("Warn: "+format, v...))
+	_ = stdLog.Output(2, fmt.Sprintf("Warn: "+format, v...))
 }
 
-func Error(format string, v ...interface{}) {
+// Errorf 表示记录ERROR以上日志
+func Errorf(format string, v ...interface{}) {
 	if stdLog.level > ERROR {
 		return
 	}
-	stdLog.Output(2, fmt.Sprintf("Error: "+format, v...))
+	_ = stdLog.Output(2, fmt.Sprintf("Error: "+format, v...))
 }
