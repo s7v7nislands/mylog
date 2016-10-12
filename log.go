@@ -31,6 +31,15 @@ var Levels = map[string]int{
 	"FATAL": FATAL,
 }
 
+func getLevelString(level int) string {
+	for k, v := range Levels {
+		if v == level {
+			return k
+		}
+	}
+	return ""
+}
+
 // GetLevel 返回日志级别,没有就返回DEBUG
 func GetLevel(level string) int {
 	l := Levels[strings.ToUpper(level)]
@@ -42,48 +51,48 @@ func GetLevel(level string) int {
 
 // Logger 表示有日志级别的
 type Logger struct {
-	mu     sync.Mutex
-	level  int
-	prefix string
-	flag   int
-	json   bool
-	w      io.Writer
+	mu          sync.Mutex
+	level       int
+	levelString string
+	flag        int
+	json        bool
+	w           io.Writer
 	*log.Logger
+
+	preM map[string]interface{}
 }
 
 var stdLog = New(INFO, os.Stderr, log.LstdFlags|log.Lshortfile, false)
 
 // Init 重新初始化
 func Init(level int, l io.Writer, flag int, json bool) {
-	stdLog = &Logger{
-		level:  level,
-		flag:   flag,
-		json:   json,
-		w:      l,
-		Logger: log.New(l, "", flag),
-	}
+	stdLog = New(level, l, flag, json)
 }
 
 // New 返回*Logger
 func New(level int, l io.Writer, flag int, json bool) *Logger {
 	return &Logger{
-		level:  level,
-		flag:   flag,
-		json:   json,
-		w:      l,
-		Logger: log.New(l, "", flag),
+		level:       level,
+		levelString: getLevelString(level),
+		flag:        flag,
+		json:        json,
+		w:           l,
+		Logger:      log.New(l, "", flag),
+		preM:        make(map[string]interface{}),
 	}
 }
 
 // NewCached 返回日志缓存在内存中
-func NewCached(level int, flag int) *Logger {
+func NewCached(level int, flag int, json bool) *Logger {
 	l := &bytes.Buffer{}
-	return &Logger{
-		level:  level,
-		flag:   flag,
-		w:      l,
-		Logger: log.New(l, "", flag),
-	}
+	return New(level, l, flag, json)
+}
+
+// Predefine 表示记录额外的字段
+func (l *Logger) Predefine(m map[string]interface{}) {
+	l.mu.Lock()
+	l.preM = m
+	l.mu.Unlock()
 }
 
 // Log 表示记录相应等级以上的日志
@@ -154,7 +163,7 @@ func itoa(buf *[]byte, i int, wid int) {
 }
 
 func (l *Logger) formatHeader(t time.Time, file string, line int) map[string]interface{} {
-	m := map[string]interface{}{"prefix": l.prefix}
+	m := make(map[string]interface{})
 	if l.flag&log.LUTC != 0 {
 		t = t.UTC()
 	}
@@ -183,7 +192,7 @@ func (l *Logger) formatHeader(t time.Time, file string, line int) map[string]int
 			}
 		}
 	}
-	m["timestamp"] = string(buf)
+	m["logtime"] = string(buf)
 
 	if l.flag&(log.Lshortfile|log.Llongfile) != 0 {
 		if l.flag&log.Lshortfile != 0 {
@@ -196,8 +205,8 @@ func (l *Logger) formatHeader(t time.Time, file string, line int) map[string]int
 			}
 			file = short
 		}
-		m["file"] = file
-		m["line"] = line
+		m["filename"] = file
+		m["lineno"] = line
 	}
 
 	return m
@@ -226,7 +235,12 @@ func (l *Logger) Output(calldepth int, s string) error {
 		l.mu.Lock()
 	}
 	m := l.formatHeader(now, file, line)
-	m["message"] = s
+	m["log_level"] = l.levelString
+	m["msg"] = s
+
+	for k, v := range l.preM {
+		m[k] = v
+	}
 
 	b, err := json.Marshal(m)
 

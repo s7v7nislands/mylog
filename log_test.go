@@ -41,7 +41,7 @@ func TestInitJSON(t *testing.T) {
 	Infof("info")
 	var m map[string]interface{}
 	_ = json.Unmarshal(out.Bytes(), &m)
-	message := m["message"].(string)
+	message := m["msg"].(string)
 	if message != "Info: info" {
 		t.Errorf("Debugf error: %s", out.String())
 	}
