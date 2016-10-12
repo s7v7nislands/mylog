@@ -2,11 +2,15 @@ package mylog
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"runtime"
 	"strings"
+	"sync"
+	"time"
 )
 
 // debug的级别
@@ -38,26 +42,34 @@ func GetLevel(level string) int {
 
 // Logger 表示有日志级别的
 type Logger struct {
-	level int
-	w     io.Writer
+	mu     sync.Mutex
+	level  int
+	prefix string
+	flag   int
+	json   bool
+	w      io.Writer
 	*log.Logger
 }
 
-var stdLog = New(INFO, os.Stderr, log.LstdFlags|log.Lshortfile)
+var stdLog = New(INFO, os.Stderr, log.LstdFlags|log.Lshortfile, false)
 
 // Init 重新初始化
-func Init(level int, l io.Writer, flag int) {
+func Init(level int, l io.Writer, flag int, json bool) {
 	stdLog = &Logger{
 		level:  level,
+		flag:   flag,
+		json:   json,
 		w:      l,
 		Logger: log.New(l, "", flag),
 	}
 }
 
 // New 返回*Logger
-func New(level int, l io.Writer, flag int) *Logger {
+func New(level int, l io.Writer, flag int, json bool) *Logger {
 	return &Logger{
 		level:  level,
+		flag:   flag,
+		json:   json,
 		w:      l,
 		Logger: log.New(l, "", flag),
 	}
@@ -68,6 +80,7 @@ func NewCached(level int, flag int) *Logger {
 	l := &bytes.Buffer{}
 	return &Logger{
 		level:  level,
+		flag:   flag,
 		w:      l,
 		Logger: log.New(l, "", flag),
 	}
@@ -121,6 +134,110 @@ func (l *Logger) GetOutput() io.Writer {
 // Write 记录日志
 func (l *Logger) Write(format string, v ...interface{}) {
 	_ = l.Output(2, fmt.Sprintf(format, v...))
+}
+
+// Cheap integer to fixed-width decimal ASCII.  Give a negative width to avoid zero-padding.
+func itoa(buf *[]byte, i int, wid int) {
+	// Assemble decimal in reverse order.
+	var b [20]byte
+	bp := len(b) - 1
+	for i >= 10 || wid > 1 {
+		wid--
+		q := i / 10
+		b[bp] = byte('0' + i - q*10)
+		bp--
+		i = q
+	}
+	// i < 10
+	b[bp] = byte('0' + i)
+	*buf = append(*buf, b[bp:]...)
+}
+
+func (l *Logger) formatHeader(t time.Time, file string, line int) map[string]interface{} {
+	m := map[string]interface{}{"prefix": l.prefix}
+	if l.flag&log.LUTC != 0 {
+		t = t.UTC()
+	}
+
+	var buf []byte
+	if l.flag&(log.Ldate|log.Ltime|log.Lmicroseconds) != 0 {
+		if l.flag&log.Ldate != 0 {
+			year, month, day := t.Date()
+			itoa(&buf, year, 4)
+			buf = append(buf, '/')
+			itoa(&buf, int(month), 2)
+			buf = append(buf, '/')
+			itoa(&buf, day, 2)
+			buf = append(buf, ' ')
+		}
+		if l.flag&(log.Ltime|log.Lmicroseconds) != 0 {
+			hour, min, sec := t.Clock()
+			itoa(&buf, hour, 2)
+			buf = append(buf, ':')
+			itoa(&buf, min, 2)
+			buf = append(buf, ':')
+			itoa(&buf, sec, 2)
+			if l.flag&log.Lmicroseconds != 0 {
+				buf = append(buf, '.')
+				itoa(&buf, t.Nanosecond()/1e3, 6)
+			}
+		}
+	}
+	m["timestamp"] = string(buf)
+
+	if l.flag&(log.Lshortfile|log.Llongfile) != 0 {
+		if l.flag&log.Lshortfile != 0 {
+			short := file
+			for i := len(file) - 1; i > 0; i-- {
+				if file[i] == '/' {
+					short = file[i+1:]
+					break
+				}
+			}
+			file = short
+		}
+		m["file"] = file
+		m["line"] = line
+	}
+
+	return m
+}
+
+// Output 格式化日志
+func (l *Logger) Output(calldepth int, s string) error {
+	if !l.json {
+		return l.Logger.Output(calldepth, s)
+	}
+
+	now := time.Now() // get this early.
+	var file string
+	var line int
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.flag&(log.Lshortfile|log.Llongfile) != 0 {
+		// release lock while getting caller info - it's expensive.
+		l.mu.Unlock()
+		var ok bool
+		_, file, line, ok = runtime.Caller(calldepth)
+		if !ok {
+			file = "???"
+			line = 0
+		}
+		l.mu.Lock()
+	}
+	m := l.formatHeader(now, file, line)
+	m["message"] = s
+
+	b, err := json.Marshal(m)
+
+	if err != nil {
+		panic("json.Marshal error")
+	}
+
+	b = append(b, '\n')
+
+	_, err = l.w.Write(b)
+	return err
 }
 
 // Write 记录日志
