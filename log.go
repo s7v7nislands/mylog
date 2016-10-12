@@ -304,3 +304,8 @@ func Errorf(format string, v ...interface{}) {
 	}
 	_ = stdLog.Output(2, fmt.Sprintf("Error: "+format, v...))
 }
+
+// Predefine 表示记录额外的字段
+func Predefine(m map[string]interface{}) {
+	stdLog.Predefine(m)
+}
